@@ -1,20 +1,32 @@
-from tools.tavily_tool import tavily_search
-from tools.flight_tool import search_flights
-from backend import run_travel_agent
 
-# res = tavily_search("Best hotels in India")
-# print(res)
+import os
+import requests
+from dotenv import load_dotenv
 
+load_dotenv(override=True)
 
-# res = search_flights("Plan a 7 days Nepal trip from Bangladesh")
-# print(res)
+key = os.getenv("AVIATIONSTACK_API_KEY")
+base = "http://api.aviationstack.com/v1"
 
-user_input = input("Enter travel request: ")
+for endpoint in ("flights", "airports", "airlines"):
+    try:
+        response = requests.get(
+            f"{base}/{endpoint}",
+            params={"access_key": key, "limit": 1},
+            timeout=20,
+        )
 
-response = run_travel_agent(
-    user_input=user_input,
-    thread_id="test_user"
-)
+        data = response.json()
+        error = data.get("error")
 
-print("\nFINAL RESPONSE:\n")
-print(response["answer"])
+        print(f"\n--- {endpoint} ---")
+        print("HTTP:", response.status_code)
+
+        if error:
+            print("API error:", error)
+        else:
+            print("Records:", len(data.get("data", [])))
+            print("Sample:", data.get("data", [])[:1])
+
+    except Exception as exc:
+        print(f"{endpoint} failed: {exc}")
